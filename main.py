@@ -158,6 +158,37 @@ class WorkSheet:
         print("애니 백업 체크 완료")
         messagebox.showinfo("작업 완료", "애니 백업 업데이트가 완료되었습니다.")
 
+    def update_bg_comment(self, episode_id, progressbar, root):
+        worksheet = doc.worksheet(self.title)
+        cell_list = []
+
+        total_shots = len(self.get_shot_data(episode_id))
+        progress_step = 100 / total_shots
+
+        try:
+            for shot_index, shot in enumerate(self.get_shot_data(episode_id), start=self.start_row):
+                print(f"현재 {shot['code']} BG comments 업데이트 중")
+                cell_list.append(gspread.cell.Cell(
+                    shot_index, self.bg_comment_col, value=shot["sg_bg_comments"]))
+                progressbar.step(progress_step)
+                root.update_idletasks()
+
+            worksheet.update_cells(cell_list)
+
+        except gspread.exceptions.APIError as api_error:
+            if 'quota' in str(api_error).lower() and self.retry_count < self.max_retries:
+                sleep_time = self.calculate_dynamic_sleep(api_error)
+                print(
+                    f"API Quota Exceeded. Sleeping for {sleep_time} seconds.")
+                time.sleep(sleep_time)
+                self.retry_count += 1
+                self.update_ani_backup()
+            else:
+                raise
+
+        print("BG 코멘트 업데이트 완료")
+        messagebox.showinfo("작업 완료", "BG 코멘트가 업데이트 완료되었습니다.")
+
 
 def widget():
     root = Tk()
@@ -203,7 +234,7 @@ def widget():
 
     items = [name["name"] for name in episodes_id_name]
 
-    left_frame = Frame(root, bg="#292929", height=60)
+    left_frame = Frame(root, bg="#292929", height=100)
     left_frame.place(x=0, y=0)
 
     right_frame = Frame(root, bg="#181914", height=100, width=80)
@@ -216,14 +247,19 @@ def widget():
     listbox.selection_set(0)  # Set the default selection
 
     progressbar = ttk.Progressbar(right_frame, mode='determinate')
-    progressbar.pack(fill=X, expand=True, pady=(0, 83))
+    progressbar.pack(fill=X, expand=True, pady=(0, 40))
 
-    create_button = Button(right_frame, overrelief="solid", bg="#2E5EA2", fg="#ffffff", text="시트 생성", bd=0,
+    create_button = Button(right_frame, overrelief="solid", height=1, bg="#2E5EA2", fg="#ffffff", text="시트 생성", bd=0,
                            command=lambda: on_click_create_sheet(episodes_id_name, listbox.get(listbox.curselection()), progressbar, root))
-    create_button.pack(fill=X, expand=True, pady=(0, 15))
-    ani_up_button = Button(right_frame, overrelief="solid", bg="#2E5EA2",  fg="#ffffff", text="애니 백업 업데이트", bd=0,
+    create_button.pack(fill=X, expand=True, pady=(0, 27))
+
+    ani_up_button = Button(right_frame, overrelief="solid", height=1, bg="#2E5EA2",  fg="#ffffff", text="애니 백업 업데이트", bd=0,
                            command=lambda: on_click_ani_backup_update(episodes_id_name, listbox.get(listbox.curselection()), progressbar, root))
-    ani_up_button.pack(fill=X, expand=True)
+    ani_up_button.pack(fill=X, expand=True, pady=(0, 9))
+
+    bg_com_up_button = Button(right_frame, overrelief="solid", height=1, bg="#2E5EA2",  fg="#ffffff", text="BG 코멘트 업데이트", bd=0,
+                              command=lambda: on_click_bg_comments_update(episodes_id_name, listbox.get(listbox.curselection()), progressbar, root))
+    bg_com_up_button.pack(fill=X, expand=True)
 
     root.mainloop()
 
@@ -254,6 +290,17 @@ def on_click_ani_backup_update(ep_list, selected_ep, progressbar, root):
             worksheet_instance = WorkSheet(selected_episode["name"])
             progressbar.start()
             worksheet_instance.update_ani_backup(
+                selected_episode["id"], progressbar, root)
+            progressbar.stop()
+
+
+def on_click_bg_comments_update(ep_list, selected_ep, progressbar, root):
+    print(selected_ep)
+    for selected_episode in ep_list:
+        if selected_episode["name"] == selected_ep:
+            worksheet_instance = WorkSheet(selected_episode["name"])
+            progressbar.start()
+            worksheet_instance.update_bg_comment(
                 selected_episode["id"], progressbar, root)
             progressbar.stop()
 
