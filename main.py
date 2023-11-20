@@ -289,8 +289,14 @@ def on_click_ani_backup_update(ep_list, selected_ep, progressbar, root):
         if selected_episode["name"] == selected_ep:
             worksheet_instance = WorkSheet(selected_episode["name"])
             progressbar.start()
-            worksheet_instance.update_ani_backup(
-                selected_episode["id"], progressbar, root)
+            try:
+                worksheet_instance.update_ani_backup(
+                    selected_episode["id"], progressbar, root)
+            except gspread.exceptions.WorksheetNotFound:
+
+                messagebox.showerror(
+                    "ERROR", "존재하지 않는 시트입니다.")
+
             progressbar.stop()
 
 
@@ -300,8 +306,14 @@ def on_click_bg_comments_update(ep_list, selected_ep, progressbar, root):
         if selected_episode["name"] == selected_ep:
             worksheet_instance = WorkSheet(selected_episode["name"])
             progressbar.start()
-            worksheet_instance.update_bg_comment(
-                selected_episode["id"], progressbar, root)
+            try:
+                worksheet_instance.update_bg_comment(
+                    selected_episode["id"], progressbar, root)
+            except gspread.exceptions.WorksheetNotFound:
+
+                messagebox.showerror(
+                    "ERROR", "존재하지 않는 시트입니다.")
+
             progressbar.stop()
 
 
