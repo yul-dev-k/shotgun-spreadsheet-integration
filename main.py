@@ -158,11 +158,6 @@ class WorkSheet:
         print("애니 백업 체크 완료")
         messagebox.showinfo("작업 완료", "애니 백업 업데이트가 완료되었습니다.")
 
-    def duplicate_sheet(self):
-        template = doc.worksheet("EP600")
-        dup_sheet = template.duplicate(new_sheet_name=self.title)
-        dup_sheet.update_cell(2, 2, value=self.title)
-
 
 def widget():
     root = Tk()
