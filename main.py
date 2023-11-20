@@ -7,7 +7,6 @@ import time
 from tkinter import *
 from tkinter import ttk, messagebox
 
-
 load_dotenv()
 
 URL = os.environ.get("BASE_URL")
@@ -83,10 +82,8 @@ class WorkSheet:
         template = doc.worksheet("EP600")
         dup_sheet = template.duplicate(new_sheet_name=self.title)
         dup_sheet.update_cell(2, 2, value=self.title)
-        # print(f"받아온값{self.title} 타입 {type(str(self.title))}")
         dup_sheet.update_cell(
             4, 7, value=f"▼{self.title} mg 디자인 리스트▼\nX:/p38_MiniForce/01_preproduction/season06/03_design/01_final/{str(self.title).lower()}/\n▼ 키컷경로 ▼\nZ:/p38_MiniForce/01_COMP/season06/00_KEYCUT/")
-        # worksheet = doc.worksheet(self.title)
         cell_list = []
 
         progressbar_step = 100 / total_shots
@@ -101,7 +98,6 @@ class WorkSheet:
                                   shot["sg_ambience"]),
                 gspread.cell.Cell(shot_index, self.assign_col, (shot["sg_assigned"][0]["name"] if len(
                     shot["sg_assigned"]) == 1 else "재사용" if shot["sg_uptoftp"] == "reuse" else None)),
-
                 gspread.cell.Cell(
                     shot_index, self.bg_comment_col, shot["sg_bg_comments"]),
                 gspread.cell.Cell(shot_index, self.ani_b_col,
@@ -166,7 +162,6 @@ class WorkSheet:
         template = doc.worksheet("EP600")
         dup_sheet = template.duplicate(new_sheet_name=self.title)
         dup_sheet.update_cell(2, 2, value=self.title)
-# input_ep = input("에피소드 이름 ex.EP600: ")
 
 
 def widget():
@@ -174,6 +169,9 @@ def widget():
     root.title("shotgun-googlesheet-연동-App")
     root.geometry("200x200+100+100")
     root.resizable(False, False)
+    root['background'] = '#181914'
+    root['padx'] = 15
+    root['pady'] = 15
 
     episodes_id_name = [
         {'id': 4819, 'name': 'EP600'},
@@ -210,19 +208,27 @@ def widget():
 
     items = [name["name"] for name in episodes_id_name]
 
-    combobox = ttk.Combobox(root, width=10, height=10, values=items)
-    combobox.pack()
-    combobox.set("에피소드 선택")
+    left_frame = Frame(root, bg="#292929", height=60)
+    left_frame.place(x=0, y=0)
 
-    progressbar = ttk.Progressbar(root, mode='determinate')
-    progressbar.pack()
+    right_frame = Frame(root, bg="#181914", height=100, width=80)
+    right_frame.place(x=60, y=0)
 
-    create_button = Button(root, overrelief="solid", width=15, text="시트 생성",
-                           command=lambda: on_click_create_sheet(episodes_id_name, combobox.get(), progressbar, root))
-    create_button.pack()
-    ani_up_button = Button(root, overrelief="solid", width=15, text="애니 백업 업데이트",
-                           command=lambda: on_click_ani_backup_update(episodes_id_name, combobox.get(), progressbar, root))
-    ani_up_button.pack()
+    listbox = Listbox(left_frame, height=10, width=6, selectmode="single")
+    for item in items:
+        listbox.insert(END, item)
+    listbox.pack()
+    listbox.selection_set(0)  # Set the default selection
+
+    progressbar = ttk.Progressbar(right_frame, mode='determinate')
+    progressbar.pack(fill=X, expand=True, pady=(0, 83))
+
+    create_button = Button(right_frame, overrelief="solid", bg="#2E5EA2", fg="#ffffff", text="시트 생성", bd=0,
+                           command=lambda: on_click_create_sheet(episodes_id_name, listbox.get(listbox.curselection()), progressbar, root))
+    create_button.pack(fill=X, expand=True, pady=(0, 15))
+    ani_up_button = Button(right_frame, overrelief="solid", bg="#2E5EA2",  fg="#ffffff", text="애니 백업 업데이트", bd=0,
+                           command=lambda: on_click_ani_backup_update(episodes_id_name, listbox.get(listbox.curselection()), progressbar, root))
+    ani_up_button.pack(fill=X, expand=True)
 
     root.mainloop()
 
