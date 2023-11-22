@@ -21,7 +21,7 @@ scope = [
 ]
 
 # google cloud에서 발급받은 JSON형태의 api 파일이 필요합니다.
-json_file_name = './sheetapi.json'
+json_file_name = os.path.join(os.path.abspath('.'), 'sheetapi.json')
 credentials = ServiceAccountCredentials.from_json_keyfile_name(
     json_file_name, scope)
 gc = gspread.authorize(credentials)
@@ -273,6 +273,7 @@ def on_click_create_sheet(ep_list, selected_ep, progressbar, root):
             try:
                 worksheet_instance.initialize_worksheet(
                     selected_episode["id"], progressbar, root)
+
             except gspread.exceptions.APIError as api_error:
                 error_message = str(api_error)
                 if 'duplicateSheet' in error_message and 'already exists' in error_message:
@@ -280,6 +281,14 @@ def on_click_create_sheet(ep_list, selected_ep, progressbar, root):
                         "ERROR", "이미 존재하는 시트입니다.")
                 else:
                     raise
+
+            except shotgun_api3.shotgun.AuthenticationFault as failed_auth:
+                if 'authenticate' in str(failed_auth).lower():
+                    messagebox.showerror(
+                        "ERROR", "레거시 로그인 비밀번호를 발급 받아주세요.")
+                elif 'not_found' in str(failed_auth).lower():
+                    messagebox.showerror(
+                        "ERROR", "access token 발급 및 바인드 해주세요.")
             progressbar.stop()
 
 
@@ -292,10 +301,19 @@ def on_click_ani_backup_update(ep_list, selected_ep, progressbar, root):
             try:
                 worksheet_instance.update_ani_backup(
                     selected_episode["id"], progressbar, root)
+
             except gspread.exceptions.WorksheetNotFound:
 
                 messagebox.showerror(
                     "ERROR", "존재하지 않는 시트입니다.")
+
+            except shotgun_api3.shotgun.AuthenticationFault as failed_auth:
+                if 'authenticate' in str(failed_auth).lower():
+                    messagebox.showerror(
+                        "ERROR", "레거시 로그인 비밀번호를 발급 받아주세요.")
+                elif 'not_found' in str(failed_auth).lower():
+                    messagebox.showerror(
+                        "ERROR", "access token 발급 및 바인드 해주세요.")
 
             progressbar.stop()
 
@@ -309,10 +327,18 @@ def on_click_bg_comments_update(ep_list, selected_ep, progressbar, root):
             try:
                 worksheet_instance.update_bg_comment(
                     selected_episode["id"], progressbar, root)
-            except gspread.exceptions.WorksheetNotFound:
 
+            except gspread.exceptions.WorksheetNotFound:
                 messagebox.showerror(
                     "ERROR", "존재하지 않는 시트입니다.")
+
+            except shotgun_api3.shotgun.AuthenticationFault as failed_auth:
+                if 'authenticate' in str(failed_auth).lower():
+                    messagebox.showerror(
+                        "ERROR", "레거시 로그인 비밀번호를 발급 받아주세요.")
+                elif 'not_found' in str(failed_auth).lower():
+                    messagebox.showerror(
+                        "ERROR", "access token 발급 및 바인드 해주세요.")
 
             progressbar.stop()
 
