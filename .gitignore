@@ -1,2 +1,5 @@
 .env
 sheetapi.json
+/build
+/dist
+main.spec
