@@ -289,6 +289,10 @@ def on_click_create_sheet(ep_list, selected_ep, progressbar, root):
                 elif 'not_found' in str(failed_auth).lower():
                     messagebox.showerror(
                         "ERROR", "access token 발급 및 바인드 해주세요.")
+
+            except ValueError:
+                messagebox.showerror("ERROR", ".env 파일의 아이디 혹은 비밀번호가 공란입니다.")
+
             progressbar.stop()
 
 
@@ -315,6 +319,9 @@ def on_click_ani_backup_update(ep_list, selected_ep, progressbar, root):
                     messagebox.showerror(
                         "ERROR", "access token 발급 및 바인드 해주세요.")
 
+            except ValueError:
+                messagebox.showerror("ERROR", ".env 파일의 아이디 혹은 비밀번호가 공란입니다.")
+
             progressbar.stop()
 
 
@@ -327,6 +334,9 @@ def on_click_bg_comments_update(ep_list, selected_ep, progressbar, root):
             try:
                 worksheet_instance.update_bg_comment(
                     selected_episode["id"], progressbar, root)
+
+            except ValueError:
+                messagebox.showerror("ERROR", ".env 파일의 아이디 혹은 비밀번호가 공란입니다.")
 
             except gspread.exceptions.WorksheetNotFound:
                 messagebox.showerror(
