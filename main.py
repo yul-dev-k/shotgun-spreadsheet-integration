@@ -189,6 +189,38 @@ class WorkSheet:
         print("BG 코멘트 업데이트 완료")
         messagebox.showinfo("작업 완료", "BG 코멘트가 업데이트 완료되었습니다.")
 
+    def update_assinged(self, episode_id, progressbar, root):
+        worksheet = doc.worksheet(self.title)
+        cell_list = []
+
+        total_shots = len(self.get_shot_data(episode_id))
+        progress_step = 100 / total_shots
+
+        try:
+            for shot_index, shot in enumerate(self.get_shot_data(episode_id), start=self.start_row):
+                print(f"현재 {shot['code']} 담당자 업데이트 중")
+                cell_list.append(gspread.cell.Cell(
+                    shot_index, self.assign_col, value=(shot["sg_assigned"][0]["name"] if len(
+                        shot["sg_assigned"]) == 1 else "재사용" if shot["sg_uptoftp"] == "reuse" else None)))
+                progressbar.step(progress_step)
+                root.update_idletasks()
+
+            worksheet.update_cells(cell_list)
+
+        except gspread.exceptions.APIError as api_error:
+            if 'quota' in str(api_error).lower() and self.retry_count < self.max_retries:
+                sleep_time = self.calculate_dynamic_sleep(api_error)
+                print(
+                    f"API Quota Exceeded. Sleeping for {sleep_time} seconds.")
+                time.sleep(sleep_time)
+                self.retry_count += 1
+                self.update_ani_backup()
+            else:
+                raise
+
+        print("담당자 업데이트 완료")
+        messagebox.showinfo("작업 완료", "담당자가 업데이트 완료되었습니다.")
+
 
 def widget():
     root = Tk()
@@ -247,19 +279,23 @@ def widget():
     listbox.selection_set(0)  # Set the default selection
 
     progressbar = ttk.Progressbar(right_frame, mode='determinate')
-    progressbar.pack(fill=X, expand=True, pady=(0, 40))
+    progressbar.pack(fill=X, expand=True, pady=(0, 25))
 
     create_button = Button(right_frame, overrelief="solid", height=1, bg="#2E5EA2", fg="#ffffff", text="시트 생성", bd=0,
                            command=lambda: on_click_create_sheet(episodes_id_name, listbox.get(listbox.curselection()), progressbar, root))
-    create_button.pack(fill=X, expand=True, pady=(0, 27))
+    create_button.pack(fill=X, expand=True, pady=(0, 23))
 
     ani_up_button = Button(right_frame, overrelief="solid", height=1, bg="#2E5EA2",  fg="#ffffff", text="애니 백업 업데이트", bd=0,
                            command=lambda: on_click_ani_backup_update(episodes_id_name, listbox.get(listbox.curselection()), progressbar, root))
-    ani_up_button.pack(fill=X, expand=True, pady=(0, 9))
+    ani_up_button.pack(fill=X, expand=True, pady=(0, 3))
 
     bg_com_up_button = Button(right_frame, overrelief="solid", height=1, bg="#2E5EA2",  fg="#ffffff", text="BG 코멘트 업데이트", bd=0,
                               command=lambda: on_click_bg_comments_update(episodes_id_name, listbox.get(listbox.curselection()), progressbar, root))
-    bg_com_up_button.pack(fill=X, expand=True)
+    bg_com_up_button.pack(fill=X, expand=True, pady=(0, 3))
+
+    assingn_up_button = Button(right_frame, overrelief="solid", height=1, bg="#2E5EA2",  fg="#ffffff", text="담당자 업데이트", bd=0,
+                               command=lambda: on_click_assigned_update(episodes_id_name, listbox.get(listbox.curselection()), progressbar, root))
+    assingn_up_button.pack(fill=X, expand=True)
 
     root.mainloop()
 
@@ -333,6 +369,34 @@ def on_click_bg_comments_update(ep_list, selected_ep, progressbar, root):
             progressbar.start()
             try:
                 worksheet_instance.update_bg_comment(
+                    selected_episode["id"], progressbar, root)
+
+            except ValueError:
+                messagebox.showerror("ERROR", ".env 파일의 아이디 혹은 비밀번호가 공란입니다.")
+
+            except gspread.exceptions.WorksheetNotFound:
+                messagebox.showerror(
+                    "ERROR", "존재하지 않는 시트입니다.")
+
+            except shotgun_api3.shotgun.AuthenticationFault as failed_auth:
+                if 'authenticate' in str(failed_auth).lower():
+                    messagebox.showerror(
+                        "ERROR", "레거시 로그인 비밀번호를 발급 받아주세요.")
+                elif 'not_found' in str(failed_auth).lower():
+                    messagebox.showerror(
+                        "ERROR", "access token 발급 및 바인드 해주세요.")
+
+            progressbar.stop()
+
+
+def on_click_assigned_update(ep_list, selected_ep, progressbar, root):
+    print(selected_ep)
+    for selected_episode in ep_list:
+        if selected_episode["name"] == selected_ep:
+            worksheet_instance = WorkSheet(selected_episode["name"])
+            progressbar.start()
+            try:
+                worksheet_instance.update_assinged(
                     selected_episode["id"], progressbar, root)
 
             except ValueError:
